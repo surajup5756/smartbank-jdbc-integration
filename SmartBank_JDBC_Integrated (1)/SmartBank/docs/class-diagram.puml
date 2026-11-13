@@ -1,0 +1,116 @@
+@startuml SmartBankClassDiagram
+title SmartBank - UML Class Diagram
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName Arial
+skinparam class {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  ArrowColor #475569
+}
+skinparam package {
+  BorderColor #64748B
+}
+
+package "com.smartbank.main" {
+  class Main {
+    - SCANNER : Scanner
+    - BANK : Bank
+    - STATEMENTS : StatementService
+    + main(args : String[]) : void
+    - printMenu() : void
+  }
+}
+
+package "com.smartbank.models" {
+  abstract class BankAccount {
+    - accountNumber : String
+    - accountHolder : String
+    - accountType : String
+    - balance : BigDecimal
+    - status : AccountStatus
+    - transactions : List<Transaction>
+    + deposit(amount : BigDecimal) : void
+    + withdraw(amount : BigDecimal) : void
+    + addTransferDebit(amount : BigDecimal, description : String) : void
+    + addTransferCredit(amount : BigDecimal, description : String) : void
+    + getBalance() : BigDecimal
+    + getTransactions() : List<Transaction>
+    {abstract} # getMinimumPermittedBalance() : BigDecimal
+    {abstract} # getWithdrawalFailureMessage() : String
+    {abstract} + getAccountRuleSummary() : String
+  }
+
+  class SavingsAccount {
+    - minimumBalance : BigDecimal
+    + getMinimumBalance() : BigDecimal
+    + getAccountRuleSummary() : String
+  }
+
+  class CurrentAccount {
+    - overdraftLimit : BigDecimal
+    + getOverdraftLimit() : BigDecimal
+    + getAccountRuleSummary() : String
+  }
+
+  class Transaction {
+    - transactionId : String
+    - dateTime : LocalDateTime
+    - type : String
+    - amount : BigDecimal
+    - description : String
+    - balanceAfter : BigDecimal
+    + getTransactionId() : String
+    + getFormattedDateTime() : String
+  }
+
+  enum AccountStatus {
+    ACTIVE
+    BLOCKED
+    CLOSED
+  }
+}
+
+package "com.smartbank.services" {
+  class Bank {
+    - accounts : Map<String, BankAccount>
+    - nextAccountNumber : long
+    + createSavingsAccount(...) : SavingsAccount
+    + createCurrentAccount(...) : CurrentAccount
+    + getAccount(accountNumber : String) : BankAccount
+    + getAllAccounts() : Collection<BankAccount>
+    + transfer(from : String, to : String, amount : BigDecimal) : void
+    + changeAccountStatus(...) : void
+  }
+
+  class StatementService {
+    + printStatement(account : BankAccount) : void
+    + exportCsv(account : BankAccount) : File
+  }
+}
+
+package "com.smartbank.utils" {
+  class ConsoleTable {
+    + print(headers : String[], rows : List<String[]>) : void
+  }
+
+  class InputUtil {
+    + readNonEmpty(scanner : Scanner, prompt : String) : String
+    + readMoney(scanner : Scanner, prompt : String) : BigDecimal
+    + readChoice(scanner : Scanner) : int
+  }
+}
+
+SavingsAccount --|> BankAccount
+CurrentAccount --|> BankAccount
+BankAccount "1" *-- "0..*" Transaction : records
+BankAccount --> AccountStatus : has
+Bank "1" o-- "0..*" BankAccount : manages
+Main --> Bank : uses
+Main --> StatementService : uses
+Main --> ConsoleTable : uses
+Main --> InputUtil : uses
+StatementService --> BankAccount : reads
+@enduml
